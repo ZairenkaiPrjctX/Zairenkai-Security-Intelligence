@@ -57,7 +57,8 @@ def main() -> int:
                 data = json.loads(result.stdout)
             else:
                 data = load_json(args.input)
-            write_report(normalize_osv(data, args.repository.name if isinstance(args.repository, Path) else args.repository, args.commit), args.output)
+            repository = args.repository.resolve().name if isinstance(args.repository, Path) else args.repository
+            write_report(normalize_osv(data, repository, args.commit), args.output)
             print(f"report written: {args.output}")
     except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
         print(f"zsi: {exc}", file=sys.stderr)
