@@ -28,6 +28,22 @@ def normalize_osv(data: dict[str, Any], repository: str, commit: str, scanned_at
                 if not isinstance(vuln_id, str) or not vuln_id:
                     continue
                 aliases = vuln.get("aliases") or []
+                affected_ranges: list[dict[str, Any]] = []
+                fixed_versions: set[str] = set()
+                for affected in vuln.get("affected", []):
+                    if not isinstance(affected, dict):
+                        continue
+                    for version_range in affected.get("ranges", []):
+                        if not isinstance(version_range, dict):
+                            continue
+                        events = [
+                            {kind: event[kind]}
+                            for event in version_range.get("events", [])
+                            for kind in ("introduced", "fixed", "last_affected")
+                            if isinstance(event, dict) and isinstance(event.get(kind), str)
+                        ]
+                        affected_ranges.append({"type": str(version_range.get("type") or "UNKNOWN"), "events": events})
+                        fixed_versions.update(event["fixed"] for event in events if "fixed" in event)
                 findings.append({
                     "id": vuln_id,
                     "aliases": [a for a in aliases if isinstance(a, str)],
@@ -39,9 +55,10 @@ def normalize_osv(data: dict[str, Any], repository: str, commit: str, scanned_at
                         "ecosystem": str(pkg.get("ecosystem") or "unknown"),
                     },
                     "status": "AFFECTED",
+                    "affected_ranges": affected_ranges,
                     "severity": "UNKNOWN",
                     "severity_source": None,
-                    "fixed_versions": [],
+                    "fixed_versions": sorted(fixed_versions),
                     "evidence": [{"source": "OSV-Scanner", "path": str(source.get("path") or "unknown"), "scanner_id": vuln_id}],
                     "references": [r["url"] for r in vuln.get("references", []) if isinstance(r, dict) and isinstance(r.get("url"), str)],
                     "confidence": "HIGH",
@@ -57,12 +74,12 @@ def normalize_osv(data: dict[str, Any], repository: str, commit: str, scanned_at
         "sources": [{"name": "OSV-Scanner / OSV", "status": "AVAILABLE", "updated_at": None}],
         "coverage": {"status": "PARTIAL", "summary": "Dependency findings imported from OSV-Scanner output; device, kernel backports, vendor bulletins, and non-dependency code were not assessed."},
         "findings": findings,
-        "limitations": ["No finding is not proof of safety.", "Kernel version and backport status are not evaluated.", "Severity and fixed versions are omitted unless verified by a dedicated advisory mapping."],
+        "limitations": ["No finding is not proof of safety.", "Kernel version and backport status are not evaluated.", "Severity remains unknown unless mapped from a supported scoring source."],
     }
 
 
 def validate_report(report: dict[str, Any]) -> list[str]:
-    """Validate the schema's safety-critical invariants without a JSON-schema dependency."""
+    """Validate JSON Schema constraints and safety-critical status invariants."""
     errors = [
         f"schema: {error.message} at {list(error.absolute_path)}"
         for error in Draft202012Validator(
