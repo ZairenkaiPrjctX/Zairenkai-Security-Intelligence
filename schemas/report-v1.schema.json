@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zairenkaiprjctx.github.io/Zairenkai-Security-Intelligence/report-v1.schema.json",
+  "title": "Zairenkai Security Intelligence report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "repository", "commit", "scan_status", "scanner", "scanned_at", "sources", "coverage", "findings", "limitations"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "repository": {"type": "string", "minLength": 1},
+    "commit": {"type": "string", "minLength": 1},
+    "scan_status": {"enum": ["COMPLETED", "FAILED", "NOT_SCANNED"]},
+    "scanner": {"type": "object", "required": ["name", "version"], "properties": {"name": {"type": "string"}, "version": {"type": "string"}}},
+    "scanned_at": {"type": "string", "format": "date-time"},
+    "sources": {"type": "array", "items": {"type": "object", "required": ["name", "status", "updated_at"], "properties": {"name": {"type": "string"}, "status": {"enum": ["AVAILABLE", "UNAVAILABLE", "UNSUPPORTED"]}, "updated_at": {"type": ["string", "null"]}}}},
+    "coverage": {"type": "object", "required": ["status", "summary"], "properties": {"status": {"enum": ["COMPLETE", "PARTIAL", "NONE"]}, "summary": {"type": "string"}}},
+    "findings": {"type": "array", "items": {"type": "object", "required": ["id", "aliases", "repository", "commit", "component", "status", "severity", "severity_source", "fixed_versions", "evidence", "references", "confidence", "mitigation"], "properties": {"id": {"type": "string"}, "aliases": {"type": "array", "items": {"type": "string"}}, "repository": {"type": "string"}, "commit": {"type": "string"}, "component": {"type": "object", "required": ["name", "version", "ecosystem"], "properties": {"name": {"type": "string"}, "version": {"type": "string"}, "ecosystem": {"type": "string"}}}, "status": {"enum": ["AFFECTED", "FIXED", "NOT_AFFECTED", "POTENTIALLY_AFFECTED", "UNKNOWN", "NOT_SCANNED"]}, "severity": {"enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"]}, "severity_source": {"type": ["string", "null"]}, "fixed_versions": {"type": "array", "items": {"type": "string"}}, "evidence": {"type": "array", "items": {"type": "object"}}, "references": {"type": "array", "items": {"type": "string", "format": "uri"}}, "confidence": {"enum": ["HIGH", "MEDIUM", "LOW", "UNKNOWN"]}, "mitigation": {"type": "string"}}}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  }
+}
